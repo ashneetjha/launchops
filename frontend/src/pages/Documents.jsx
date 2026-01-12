@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Layout from "../components/Layout";
 import api from "../api";
 import { UploadCloud, FileText, Brain, CheckCircle } from "lucide-react";
@@ -10,6 +10,9 @@ export default function Documents() {
   const [documents, setDocuments] = useState([]);
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [dragging, setDragging] = useState(false);
+
+  const fileInputRef = useRef();
 
   useEffect(() => {
     api.get("/work").then(res => {
@@ -20,10 +23,13 @@ export default function Documents() {
 
   useEffect(() => {
     if (!active) return;
-    api.get(`/documents?workItemId=${active._id}`).then(res => {
-      setDocuments(res.data);
-    });
+    fetchDocs();
   }, [active]);
+
+  const fetchDocs = async () => {
+    const res = await api.get(`/documents?workItemId=${active._id}`);
+    setDocuments(res.data);
+  };
 
   const upload = async () => {
     if (!file || !active) return;
@@ -35,15 +41,22 @@ export default function Documents() {
 
     await api.post("/documents", form);
 
-    const res = await api.get(`/documents?workItemId=${active._id}`);
-    setDocuments(res.data);
+    await fetchDocs();
     setFile(null);
     setLoading(false);
   };
 
   const runAI = async () => {
+    if (!active) return;
     await api.post("/ai/extract-metrics", { workItemId: active._id });
     alert("AI processing complete. Check Dashboard.");
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    const dropped = e.dataTransfer.files[0];
+    if (dropped) setFile(dropped);
   };
 
   return (
@@ -68,22 +81,31 @@ export default function Documents() {
 
       {/* Upload Zone */}
       <motion.div
-        whileHover={{ scale: 1.02 }}
+        whileHover={{ scale: 1.01 }}
         className="card"
         style={{
-          border: "2px dashed var(--border)",
+          border: `2px dashed ${dragging ? "var(--gold)" : "var(--border)"}`,
           textAlign: "center",
           padding: 40,
-          cursor: "pointer"
+          cursor: "pointer",
+          background: dragging ? "rgba(224,184,74,0.05)" : "transparent"
         }}
-        onClick={() => document.getElementById("fileInput").click()}
+        onClick={() => fileInputRef.current.click()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={handleDrop}
       >
         <UploadCloud size={40} />
-        <p style={{ marginTop: 12 }}>Click to upload or drag & drop</p>
+        <p style={{ marginTop: 12 }}>
+          Drag & drop a file here or click to upload
+        </p>
         <p className="muted">PDF, images, or docs</p>
 
         <input
-          id="fileInput"
+          ref={fileInputRef}
           type="file"
           hidden
           onChange={e => setFile(e.target.files[0])}
@@ -102,12 +124,12 @@ export default function Documents() {
           <h2>Files</h2>
 
           <button className="btn-outline" onClick={runAI}>
-            <Brain size={16} /> Run AI on documents
+            <Brain size={16} /> Run AI
           </button>
         </div>
 
         {documents.length === 0 && (
-          <div className="card muted" style={{ textAlign: "center" }}>
+          <div className="card muted" style={{ textAlign: "center", marginTop: 16 }}>
             No documents uploaded yet
           </div>
         )}
@@ -121,15 +143,10 @@ export default function Documents() {
           }}
         >
           {documents.map(doc => (
-            <a
+            <div
               key={doc._id}
-              href={doc.fileUrl}
-              target="_blank"
-              rel="noreferrer"
               className="card"
               style={{
-                textDecoration: "none",
-                color: "var(--text)",
                 display: "flex",
                 flexDirection: "column",
                 gap: 10
@@ -144,7 +161,17 @@ export default function Documents() {
                 <CheckCircle size={14} color="var(--gold)" />
                 <span className="muted">Uploaded</span>
               </div>
-            </a>
+
+              <a
+                href={doc.fileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-outline"
+                style={{ textAlign: "center", marginTop: 8 }}
+              >
+                Open
+              </a>
+            </div>
           ))}
         </div>
       </div>
