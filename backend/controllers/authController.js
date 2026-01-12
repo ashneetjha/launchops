@@ -2,6 +2,12 @@ import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: "7d"
+  });
+};
+
 export const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -24,15 +30,31 @@ export const registerUser = async (req, res) => {
       passwordHash
     });
 
-    res.status(201).json({ message: "User created" });
+    // 🔑 Issue JWT immediately after signup
+    const token = generateToken(user._id);
+
+    res.status(201).json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
+      }
+    });
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Register error:", error);
+    res.status(500).json({ message: "Registration failed" });
   }
 };
 
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: "All fields required" });
+    }
 
     const user = await User.findOne({ email });
     if (!user) {
@@ -44,11 +66,7 @@ export const loginUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const token = generateToken(user._id);
 
     res.json({
       token,
@@ -58,7 +76,9 @@ export const loginUser = async (req, res) => {
         email: user.email
       }
     });
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Login failed" });
   }
 };

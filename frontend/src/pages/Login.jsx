@@ -1,11 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api";
 
 export default function Login() {
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // If someone hits /login while already authenticated, force logout
+  useEffect(() => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+  }, []);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -15,36 +24,39 @@ export default function Login() {
     try {
       const res = await api.post("/auth/login", { email, password });
 
+      // Save session
       localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
 
-      window.location.href = "/dashboard";
+      // Prevent browser back button from going back to login
+      navigate("/dashboard", { replace: true });
     } catch (err) {
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Login failed. Check email or password.");
-      }
+      setError(err.response?.data?.message || "Invalid email or password");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      background: "linear-gradient(135deg, #020617, #020617)"
-    }}>
-      <div className="card" style={{
-        width: 380,
-        padding: 30,
-        borderRadius: 12,
-        boxShadow: "0 20px 60px rgba(0,0,0,0.5)"
-      }}>
-        <h2 style={{ marginBottom: 5 }}>LaunchOps</h2>
-        <p style={{ opacity: 0.7, marginBottom: 25 }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(135deg, #020617, #020617)"
+      }}
+    >
+      <div
+        className="card"
+        style={{
+          width: 380,
+          padding: 32,
+          borderRadius: 14
+        }}
+      >
+        <h2>LaunchOps</h2>
+        <p className="muted" style={{ marginBottom: 24 }}>
           Founder Intelligence Platform
         </p>
 
@@ -53,7 +65,7 @@ export default function Login() {
             type="email"
             placeholder="Email"
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
             required
           />
 
@@ -61,12 +73,12 @@ export default function Login() {
             type="password"
             placeholder="Password"
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
             required
           />
 
           {error && (
-            <div style={{ color: "#f87171", fontSize: 14, marginBottom: 10 }}>
+            <div style={{ color: "#ef4444", fontSize: 14, marginBottom: 10 }}>
               {error}
             </div>
           )}
@@ -81,12 +93,17 @@ export default function Login() {
           </button>
         </form>
 
-        <p
-          style={{ marginTop: 20, textAlign: "center", cursor: "pointer", opacity: 0.8 }}
-          onClick={() => window.location.href = "/register"}
+        <div
+          style={{
+            marginTop: 18,
+            textAlign: "center",
+            cursor: "pointer",
+            color: "var(--muted)"
+          }}
+          onClick={() => navigate("/register")}
         >
-          Create Account
-        </p>
+          Create account
+        </div>
       </div>
     </div>
   );

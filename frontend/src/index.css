@@ -1,100 +1,120 @@
+/* ===============================
+   Design Tokens
+================================ */
+
 :root {
+  --gold: #d4af37;
+  --radius: 14px;
+  --transition: 0.25s ease;
+}
+
+/* ===============================
+   DARK MODE
+================================ */
+[data-theme="dark"] {
   --bg: #0b0f17;
-  --card: #131a2a;
-  --text: #eaf0ff;
-  --muted: #9aa4bf;
-  --gold: #e0b84a;
+  --card: #111827;
   --border: rgba(255,255,255,0.08);
+  --text: #f8fafc;
+  --muted: #94a3b8;
+  --input: #020617;
 }
 
+/* ===============================
+   LIGHT MODE
+================================ */
 [data-theme="light"] {
-  --bg: #f6f7fb;
+  --bg: #f8fafc;
   --card: #ffffff;
-  --text: #0b0f17;
-  --muted: #4b5563;
-  --gold: #c8a23a;
   --border: rgba(0,0,0,0.08);
+  --text: #020617;
+  --muted: #475569;
+  --input: #ffffff;
 }
 
+/* ===============================
+   Global Reset
+================================ */
 * {
   box-sizing: border-box;
-  font-family: "Inter", system-ui, sans-serif;
+  margin: 0;
+  padding: 0;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+html, body {
+  height: 100%;
+}
+
+/* ===============================
+   Body
+================================ */
 body {
-  margin: 0;
   background: var(--bg);
   color: var(--text);
+  transition: background var(--transition), color var(--transition);
 }
 
-input, button {
-  font: inherit;
-}
-
-.card {
-  background: var(--card);
-  border-radius: 14px;
+/* ===============================
+   Inputs
+================================ */
+input, textarea, select {
+  width: 100%;
+  background: var(--input);
   border: 1px solid var(--border);
-  padding: 20px;
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 8px;
+  outline: none;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+}
+
+/* ===============================
+   Buttons
+================================ */
+button {
+  font: inherit;
+  border: none;
+  cursor: pointer;
 }
 
 .btn {
   background: var(--gold);
   color: #000;
-  border: none;
   padding: 10px 16px;
   border-radius: 10px;
   font-weight: 600;
-  cursor: pointer;
+  transition: 0.2s;
 }
 
-.btn-outline {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text);
-}
-.sidebar {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 220px;
-  height: 100vh;
-  background: #0b0e14;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
+.btn:hover {
+  filter: brightness(1.05);
 }
 
-.logo {
-  width: 100px;
-  margin: auto;
-}
-
-.sidebar nav a {
-  display: flex;
-  gap: 10px;
-  color: #f5c542;
-  text-decoration: none;
-  padding: 10px;
-  border-radius: 6px;
-}
-
-.sidebar nav a:hover {
-  background: #1a1f2e;
-}
-body {
-  margin: 0;
-  background: radial-gradient(circle at top, #0b1020, #020409);
-  color: white;
-  font-family: "Inter", system-ui, sans-serif;
-}
-
+/* ===============================
+   Cards
+================================ */
 .card {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
+  background: var(--card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
   padding: 24px;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 0 40px rgba(0,0,0,0.4);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 50px rgba(0,0,0,0.45);
+}
+
+/* ===============================
+   Text helpers
+================================ */
+.muted {
+  color: var(--muted);
 }

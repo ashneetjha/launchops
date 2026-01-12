@@ -16,7 +16,6 @@ export default function AI() {
   const [loadingExtract, setLoadingExtract] = useState(false);
   const [loadingAlerts, setLoadingAlerts] = useState(false);
 
-  // Load all work items on page load
   useEffect(() => {
     async function loadWork() {
       const res = await api.get("/work");
@@ -26,10 +25,8 @@ export default function AI() {
     loadWork();
   }, []);
 
-  // Ask AI a question
   const askAI = async () => {
     if (!question || !activeWorkItem) return;
-
     setLoadingAsk(true);
     const res = await api.post("/ai/analyze", {
       workItemId: activeWorkItem._id,
@@ -39,15 +36,12 @@ export default function AI() {
     setLoadingAsk(false);
   };
 
-  // Extract metrics
   const extractMetrics = async () => {
     if (!activeWorkItem) return;
-
     setLoadingExtract(true);
     await api.post("/ai/extract-metrics", {
       workItemId: activeWorkItem._id
     });
-
     const updated = await api.get("/work");
     const current = updated.data.find(w => w._id === activeWorkItem._id);
     setActiveWorkItem(current);
@@ -55,10 +49,8 @@ export default function AI() {
     setLoadingExtract(false);
   };
 
-  // Get risk alerts
   const getAlerts = async () => {
     if (!activeWorkItem) return;
-
     setLoadingAlerts(true);
     const res = await api.post("/ai/alerts", {
       workItemId: activeWorkItem._id
@@ -69,10 +61,9 @@ export default function AI() {
 
   return (
     <Layout>
-      <h1 style={{ fontSize: "28px", fontWeight: 700 }}>AI Command Center</h1>
-
-      {/* WorkItem Selector */}
-      <div style={{ marginTop: "20px" }}>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1 style={{ fontSize: "28px", fontWeight: 700 }}>AI Command Center</h1>
         <select
           value={activeWorkItem?._id || ""}
           onChange={(e) =>
@@ -87,56 +78,76 @@ export default function AI() {
         </select>
       </div>
 
-      {/* Ask AI */}
-      <div className="card" style={{ marginTop: "20px" }}>
-        <h3>Ask AI</h3>
-        <textarea
-          rows="3"
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Ask anything about this startup..."
-        />
-        <button onClick={askAI} disabled={loadingAsk}>
-          {loadingAsk ? "Thinking..." : "Ask"}
-        </button>
-
-        {answer && (
-          <div style={{ marginTop: "10px", whiteSpace: "pre-wrap" }}>
-            {answer}
+      {/* Metric cards */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(4, 1fr)",
+        gap: "20px"
+      }}>
+        {["Revenue", "Expenses", "Runway", "Risk"].map((label, i) => (
+          <div key={i} className="card" style={{ padding: "20px" }}>
+            <div style={{ opacity: 0.6, fontSize: 14 }}>{label}</div>
+            <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>
+              {metrics
+                ? label === "Revenue" ? `₹${metrics.revenue}`
+                : label === "Expenses" ? `₹${metrics.expenses}`
+                : label === "Runway" ? `${metrics.runwayMonths} mo`
+                : metrics.riskLevel
+                : "—"}
+            </div>
           </div>
-        )}
+        ))}
       </div>
 
-      {/* Extract Metrics */}
-      <div className="card" style={{ marginTop: "20px" }}>
-        <h3>Extract Financial Metrics</h3>
-        <button onClick={extractMetrics} disabled={loadingExtract}>
-          {loadingExtract ? "Analyzing..." : "Run AI Extraction"}
-        </button>
-
-        {metrics && (
-          <div style={{ marginTop: "10px" }}>
-            <p><b>Revenue:</b> ₹{metrics.revenue}</p>
-            <p><b>Expenses:</b> ₹{metrics.expenses}</p>
-            <p><b>Funding Required:</b> ₹{metrics.fundingRequired}</p>
-            <p><b>Runway:</b> {metrics.runwayMonths} months</p>
-            <p><b>Risk:</b> {metrics.riskLevel}</p>
+      {/* Main 2-column layout */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: "32px",
+        marginTop: "20px"
+      }}>
+        {/* Left column */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+          <div className="card" style={{ padding: "24px" }}>
+            <h3>Ask AI</h3>
+            <textarea
+              rows="4"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Ask anything about this startup..."
+            />
+            <button onClick={askAI} disabled={loadingAsk}>
+              {loadingAsk ? "Thinking..." : "Ask"}
+            </button>
           </div>
-        )}
-      </div>
 
-      {/* Risk & Alerts */}
-      <div className="card" style={{ marginTop: "20px" }}>
-        <h3>Founder Alerts</h3>
-        <button onClick={getAlerts} disabled={loadingAlerts}>
-          {loadingAlerts ? "Scanning..." : "Run Risk Scan"}
-        </button>
-
-        {alerts && (
-          <div style={{ marginTop: "10px", whiteSpace: "pre-wrap" }}>
-            {alerts}
+          <div className="card" style={{ padding: "24px" }}>
+            <h3>Extract Financial Metrics</h3>
+            <button onClick={extractMetrics} disabled={loadingExtract}>
+              {loadingExtract ? "Analyzing..." : "Run AI Extraction"}
+            </button>
           </div>
-        )}
+        </div>
+
+        {/* Right column */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+          <div className="card" style={{ padding: "24px", minHeight: 180 }}>
+            <h3>AI Answer</h3>
+            <div style={{ whiteSpace: "pre-wrap", opacity: 0.9 }}>
+              {answer || "Ask a question to see AI insights here."}
+            </div>
+          </div>
+
+          <div className="card" style={{ padding: "24px", minHeight: 180 }}>
+            <h3>Founder Alerts</h3>
+            <button onClick={getAlerts} disabled={loadingAlerts}>
+              {loadingAlerts ? "Scanning..." : "Run Risk Scan"}
+            </button>
+            <div style={{ marginTop: 12, whiteSpace: "pre-wrap", opacity: 0.9 }}>
+              {alerts || "Run a scan to detect risks and issues."}
+            </div>
+          </div>
+        </div>
       </div>
     </Layout>
   );
