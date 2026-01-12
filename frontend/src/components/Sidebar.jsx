@@ -9,12 +9,12 @@ export default function Sidebar() {
     alignItems: "center",
     gap: "10px",
     padding: "10px 12px",
-    borderRadius: "8px",
+    borderRadius: "10px",
     textDecoration: "none",
     fontWeight: 500,
     fontSize: "14px",
-    color: isActive ? "var(--gold)" : "var(--muted)",
-    background: isActive ? "rgba(212,175,55,0.08)" : "transparent",
+    color: isActive ? "var(--primary)" : "var(--muted)",
+    background: isActive ? "rgba(124,124,255,0.12)" : "transparent",
     transition: "0.2s"
   });
 
@@ -27,7 +27,8 @@ export default function Sidebar() {
         display: "flex",
         flexDirection: "column",
         padding: "16px 12px",
-        gap: "20px"
+        gap: "20px",
+        backdropFilter: "blur(12px)"
       }}
     >
       {/* Logo */}

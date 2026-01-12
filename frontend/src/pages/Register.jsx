@@ -1,7 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api";
 
 export default function Register() {
+  const navigate = useNavigate();
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,8 +23,14 @@ export default function Register() {
         password
       });
 
+      // Save session (must match Login.jsx)
       localStorage.setItem("token", res.data.token);
-      window.location.href = "/dashboard";
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+
+      // Force onboarding for new users
+      localStorage.removeItem("onboarded");
+
+      navigate("/onboarding", { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");
     } finally {
@@ -30,30 +39,34 @@ export default function Register() {
   };
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      background: "linear-gradient(135deg, #020617, #020617)"
-    }}>
-      <div className="card" style={{
-        width: 380,
-        padding: 30,
-        borderRadius: 12,
-        boxShadow: "0 20px 60px rgba(0,0,0,0.5)"
-      }}>
-        <h2 style={{ marginBottom: 5 }}>Create your LaunchOps account</h2>
-        <p style={{ opacity: 0.7, marginBottom: 25 }}>
-          Start turning startup documents into intelligence
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(135deg, #020617, #020617)"
+      }}
+    >
+      <div
+        className="card"
+        style={{
+          width: 380,
+          padding: 32,
+          borderRadius: 14
+        }}
+      >
+        <h2>Create your LaunchOps account</h2>
+        <p className="muted" style={{ marginBottom: 24 }}>
+          Start turning documents into intelligence
         </p>
 
         <form onSubmit={submit}>
           <input
             type="text"
-            placeholder="Full Name"
+            placeholder="Full name"
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={(e) => setName(e.target.value)}
             required
           />
 
@@ -61,20 +74,20 @@ export default function Register() {
             type="email"
             placeholder="Email"
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
             required
           />
 
           <input
             type="password"
-            placeholder="Password"
+            placeholder="Password (min 8 characters)"
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
             required
           />
 
           {error && (
-            <div style={{ color: "#f87171", fontSize: 14, marginBottom: 10 }}>
+            <div style={{ color: "#ef4444", fontSize: 14, marginBottom: 10 }}>
               {error}
             </div>
           )}
@@ -85,16 +98,21 @@ export default function Register() {
             style={{ width: "100%", marginTop: 10 }}
             disabled={loading}
           >
-            {loading ? "Creating account..." : "Create Account"}
+            {loading ? "Creating..." : "Create Account"}
           </button>
         </form>
 
-        <p
-          style={{ marginTop: 20, textAlign: "center", cursor: "pointer", opacity: 0.8 }}
-          onClick={() => window.location.href = "/"}
+        <div
+          style={{
+            marginTop: 18,
+            textAlign: "center",
+            cursor: "pointer",
+            color: "var(--muted)"
+          }}
+          onClick={() => navigate("/login")}
         >
           Already have an account?
-        </p>
+        </div>
       </div>
     </div>
   );

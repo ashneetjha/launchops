@@ -63,7 +63,7 @@ export default function AI() {
     <Layout>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ fontSize: "28px", fontWeight: 700 }}>AI Command Center</h1>
+        <h1>AI Command Center</h1>
         <select
           value={activeWorkItem?._id || ""}
           onChange={(e) =>
@@ -79,15 +79,11 @@ export default function AI() {
       </div>
 
       {/* Metric cards */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)",
-        gap: "20px"
-      }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 20 }}>
         {["Revenue", "Expenses", "Runway", "Risk"].map((label, i) => (
-          <div key={i} className="card" style={{ padding: "20px" }}>
-            <div style={{ opacity: 0.6, fontSize: 14 }}>{label}</div>
-            <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>
+          <div key={i} className="card">
+            <div className="muted">{label}</div>
+            <div style={{ fontSize: 26, fontWeight: 700, color: "var(--primary)", marginTop: 8 }}>
               {metrics
                 ? label === "Revenue" ? `₹${metrics.revenue}`
                 : label === "Expenses" ? `₹${metrics.expenses}`
@@ -100,15 +96,10 @@ export default function AI() {
       </div>
 
       {/* Main 2-column layout */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: "32px",
-        marginTop: "20px"
-      }}>
-        {/* Left column */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-          <div className="card" style={{ padding: "24px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
+        {/* Left */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <div className="card">
             <h3>Ask AI</h3>
             <textarea
               rows="4"
@@ -116,32 +107,32 @@ export default function AI() {
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="Ask anything about this startup..."
             />
-            <button onClick={askAI} disabled={loadingAsk}>
-              {loadingAsk ? "Thinking..." : "Ask"}
+            <button className="btn" onClick={askAI} disabled={loadingAsk}>
+              {loadingAsk ? "Thinking…" : "Ask"}
             </button>
           </div>
 
-          <div className="card" style={{ padding: "24px" }}>
+          <div className="card">
             <h3>Extract Financial Metrics</h3>
-            <button onClick={extractMetrics} disabled={loadingExtract}>
-              {loadingExtract ? "Analyzing..." : "Run AI Extraction"}
+            <button className="btn" onClick={extractMetrics} disabled={loadingExtract}>
+              {loadingExtract ? "Analyzing…" : "Run AI Extraction"}
             </button>
           </div>
         </div>
 
-        {/* Right column */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-          <div className="card" style={{ padding: "24px", minHeight: 180 }}>
+        {/* Right */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <div className="card">
             <h3>AI Answer</h3>
             <div style={{ whiteSpace: "pre-wrap", opacity: 0.9 }}>
               {answer || "Ask a question to see AI insights here."}
             </div>
           </div>
 
-          <div className="card" style={{ padding: "24px", minHeight: 180 }}>
+          <div className="card">
             <h3>Founder Alerts</h3>
-            <button onClick={getAlerts} disabled={loadingAlerts}>
-              {loadingAlerts ? "Scanning..." : "Run Risk Scan"}
+            <button className="btn" onClick={getAlerts} disabled={loadingAlerts}>
+              {loadingAlerts ? "Scanning…" : "Run Risk Scan"}
             </button>
             <div style={{ marginTop: 12, whiteSpace: "pre-wrap", opacity: 0.9 }}>
               {alerts || "Run a scan to detect risks and issues."}

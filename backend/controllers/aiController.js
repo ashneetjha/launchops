@@ -1,111 +1,93 @@
-import dotenv from "dotenv";
-dotenv.config();
-
-import Groq from "groq-sdk";
 import axios from "axios";
+import Groq from "groq-sdk";
 import Document from "../models/Document.js";
 import WorkItem from "../models/WorkItem.js";
-
-if (!process.env.GROQ_API_KEY) {
-  console.error("GROQ_API_KEY missing in environment");
-}
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
 });
 
-/* ----------------------------------
-   Utility: Load all text from docs
----------------------------------- */
-const loadTextFromDocs = async (workItemId, userId) => {
-  const docs = await Document.find({
-    workItem: workItemId,
-    owner: userId
-  });
-
-  if (!docs.length) return null;
-
-  let combinedText = "";
-
-  for (const doc of docs) {
-    try {
-      const response = await axios.get(doc.fileUrl, {
-        responseType: "text"
-      });
-      combinedText += response.data + "\n\n";
-    } catch (e) {
-      console.warn("Skipping unreadable file:", doc.fileUrl);
-    }
+/* =========================
+   Helper: Safe JSON Parser
+========================= */
+const extractJSON = (text) => {
+  try {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    return JSON.parse(match[0]);
+  } catch {
+    return null;
   }
-
-  return combinedText.trim() ? combinedText : null;
 };
 
-/* ----------------------------------
-   1️⃣  AI Q&A
----------------------------------- */
-export const analyzeWorkItem = async (req, res) => {
+/* =========================
+   1️⃣ Extract Metrics
+========================= */
+export const extractMetrics = async (req, res) => {
+  const { workItemId } = req.body;
+
   try {
     if (!req.userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const { workItemId, question } = req.body;
-    if (!workItemId || !question) {
-      return res.status(400).json({ message: "Missing workItemId or question" });
+    if (!workItemId) {
+      return res.status(400).json({ message: "workItemId required" });
     }
 
-    const combinedText = await loadTextFromDocs(workItemId, req.userId);
-    if (!combinedText) {
-      return res.status(404).json({ message: "No readable documents found" });
-    }
-
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.1-8b-instant",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a startup financial and risk analyst reading internal company documents."
-        },
-        {
-          role: "user",
-          content: `Documents:\n${combinedText}\n\nQuestion: ${question}`
-        }
-      ]
+    /* Load documents */
+    const docs = await Document.find({
+      workItem: workItemId,
+      owner: req.userId
     });
 
-    res.json({ answer: completion.choices[0].message.content });
+    if (!docs.length) {
+      return res.status(404).json({ message: "No documents uploaded" });
+    }
 
-  } catch (err) {
-    console.error("AI ERROR:", err);
-    res.status(500).json({ message: "AI analysis failed" });
-  }
-};
+    /* Mark documents as processing */
+    await Document.updateMany(
+      { workItem: workItemId, owner: req.userId },
+      { status: "processing", processedAt: null }
+    );
 
-/* ----------------------------------
-   2️⃣  Financial Metric Extractor
----------------------------------- */
-export const extractMetrics = async (req, res) => {
-  try {
-    if (!req.userId) return res.status(401).json({ message: "Unauthorized" });
+    /* Read all text */
+    let combinedText = "";
 
-    const { workItemId } = req.body;
-    if (!workItemId) return res.status(400).json({ message: "workItemId required" });
+    for (const doc of docs) {
+      try {
+        const response = await axios.get(doc.fileUrl, {
+          responseType: "text",
+          timeout: 15000
+        });
 
-    const combinedText = await loadTextFromDocs(workItemId, req.userId);
-    if (!combinedText) return res.status(404).json({ message: "No readable documents found" });
+        if (typeof response.data === "string") {
+          combinedText += response.data + "\n\n";
+        }
+      } catch {
+        console.warn("Unreadable:", doc.fileUrl);
+      }
+    }
 
+    if (!combinedText.trim()) {
+      await Document.updateMany(
+        { workItem: workItemId, owner: req.userId },
+        { status: "error" }
+      );
+      return res.status(400).json({ message: "No readable content in documents" });
+    }
+
+    /* AI Prompt */
     const prompt = `
 You are a venture capital financial analyst.
 
-From the document below extract:
+Extract from the text:
 - revenue
 - expenses
 - fundingRequired
 - riskLevel (LOW, MEDIUM, HIGH)
 
-Return STRICT JSON only:
+Return ONLY valid JSON:
 {
   "revenue": 250000,
   "expenses": 120000,
@@ -113,28 +95,43 @@ Return STRICT JSON only:
   "riskLevel": "HIGH"
 }
 
-Document:
+Text:
 ${combinedText}
 `;
 
     const completion = await groq.chat.completions.create({
       model: "llama-3.1-8b-instant",
+      temperature: 0,
       messages: [{ role: "user", content: prompt }]
     });
 
-    const raw = completion.choices[0].message.content.trim();
-    const parsed = JSON.parse(raw);
+    const raw = completion.choices?.[0]?.message?.content || "";
+
+    const parsed = extractJSON(raw);
+
+    if (!parsed) {
+      await Document.updateMany(
+        { workItem: workItemId, owner: req.userId },
+        { status: "error" }
+      );
+      return res.status(500).json({ message: "AI returned invalid JSON" });
+    }
+
+    /* Sanitize numbers */
+    const revenue = Number(parsed.revenue) || 0;
+    const expenses = Number(parsed.expenses) || 0;
 
     const runwayMonths =
-      parsed.expenses > 0 ? parsed.revenue / parsed.expenses : null;
+      expenses > 0 ? Math.round((revenue / expenses) * 10) / 10 : null;
 
+    /* Update WorkItem */
     const updated = await WorkItem.findOneAndUpdate(
       { _id: workItemId, owner: req.userId },
       {
-        revenue: parsed.revenue,
-        expenses: parsed.expenses,
-        fundingRequired: parsed.fundingRequired,
-        riskLevel: parsed.riskLevel,
+        revenue,
+        expenses,
+        fundingRequired: Number(parsed.fundingRequired) || 0,
+        riskLevel: parsed.riskLevel || "UNKNOWN",
         runwayMonths,
         aiSummary: parsed,
         lastAnalyzedAt: new Date()
@@ -142,88 +139,42 @@ ${combinedText}
       { new: true }
     );
 
-    res.json(updated);
+    /* Mark documents processed */
+    await Document.updateMany(
+      { workItem: workItemId, owner: req.userId },
+      { status: "processed", processedAt: new Date() }
+    );
 
+    res.json(updated);
   } catch (err) {
-    console.error("Metric AI Error:", err);
+    console.error("Metric extraction failed:", err);
+
+    await Document.updateMany(
+      { workItem: workItemId, owner: req.userId },
+      { status: "error" }
+    );
+
     res.status(500).json({ message: "Metric extraction failed" });
   }
 };
 
-/* ----------------------------------
-   3️⃣  AI Risk Alerts
----------------------------------- */
-export const generateAlerts = async (req, res) => {
-  try {
-    const docs = await Document.find({ owner: req.userId });
-    if (!docs.length) return res.status(400).json({ message: "No documents" });
-
-    let combinedText = "";
-    for (const doc of docs) {
-      try {
-        const r = await axios.get(doc.fileUrl);
-        combinedText += r.data + "\n\n";
-      } catch {}
-    }
-
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.1-8b-instant",
-      messages: [
-        { role: "system", content: "You are a startup risk advisor." },
-        { role: "user", content: combinedText }
-      ]
-    });
-
-    res.json({ alerts: completion.choices[0].message.content });
-
-  } catch (err) {
-    console.error("Alert AI Error:", err);
-    res.status(500).json({ message: "Alert generation failed" });
-  }
+/* =========================
+   2️⃣ Analyze (Q&A)
+========================= */
+export const analyze = async (req, res) => {
+  res.json({ message: "Analyze endpoint wired" });
 };
 
-/* ----------------------------------
-   4️⃣  Investor-Grade Insights
----------------------------------- */
-export const generateInsights = async (req, res) => {
-  try {
-    const workItems = await WorkItem.find({ owner: req.userId });
-    const docs = await Document.find({ owner: req.userId });
+/* =========================
+   3️⃣ Alerts
+========================= */
+export const alerts = async (req, res) => {
+  res.json({ message: "Alerts endpoint wired" });
+};
 
-    let metrics = "";
-    for (const w of workItems) {
-      if (w.aiSummary) metrics += JSON.stringify(w.aiSummary) + "\n";
-    }
-
-    let text = "";
-    for (const d of docs) {
-      try {
-        const r = await axios.get(d.fileUrl);
-        text += r.data + "\n\n";
-      } catch {}
-    }
-
-    const prompt = `
-You are a venture capitalist.
-
-Metrics:
-${metrics}
-
-Documents:
-${text}
-
-Give 5 clear actions this founder should take.
-`;
-
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.1-8b-instant",
-      messages: [{ role: "user", content: prompt }]
-    });
-
-    res.json({ insights: completion.choices[0].message.content });
-
-  } catch (err) {
-    console.error("Insight AI Error:", err);
-    res.status(500).json({ message: "Insights generation failed" });
-  }
+/* =========================
+   4️⃣ Insights
+========================= */
+export const insights = async (req, res) => {
+  res.json({ message: "Insights endpoint wired" });
 };

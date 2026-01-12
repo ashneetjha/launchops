@@ -34,21 +34,9 @@ export default function Dashboard() {
   }
 
   const chartData = [
-    {
-      name: "Now",
-      Revenue: selected.revenue || 0,
-      Burn: selected.expenses || 0
-    },
-    {
-      name: "3m",
-      Revenue: (selected.revenue || 0) * 1.2,
-      Burn: (selected.expenses || 0) * 1.1
-    },
-    {
-      name: "6m",
-      Revenue: (selected.revenue || 0) * 1.5,
-      Burn: (selected.expenses || 0) * 1.2
-    }
+    { name: "Now", Revenue: selected.revenue || 0, Burn: selected.expenses || 0 },
+    { name: "3m", Revenue: (selected.revenue || 0) * 1.2, Burn: (selected.expenses || 0) * 1.1 },
+    { name: "6m", Revenue: (selected.revenue || 0) * 1.5, Burn: (selected.expenses || 0) * 1.2 }
   ];
 
   return (
@@ -73,11 +61,11 @@ export default function Dashboard() {
         <div style={{ width: "100%", height: 300 }}>
           <ResponsiveContainer>
             <LineChart data={chartData}>
-              <XAxis dataKey="name" />
-              <YAxis />
+              <XAxis dataKey="name" stroke="var(--muted)" />
+              <YAxis stroke="var(--muted)" />
               <Tooltip />
-              <Line type="monotone" dataKey="Revenue" stroke="#e0b84a" strokeWidth={3} />
-              <Line type="monotone" dataKey="Burn" stroke="#ef4444" strokeWidth={2} />
+              <Line type="monotone" dataKey="Revenue" stroke="var(--primary)" strokeWidth={3} />
+              <Line type="monotone" dataKey="Burn" stroke="var(--accent)" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -94,7 +82,10 @@ export default function Dashboard() {
               onClick={() => setSelected(w)}
               style={{
                 cursor: "pointer",
-                border: selected._id === w._id ? "2px solid var(--gold)" : "1px solid var(--border)"
+                border:
+                  selected._id === w._id
+                    ? "2px solid var(--primary)"
+                    : "1px solid var(--border)"
               }}
             >
               <h3>{w.title}</h3>
@@ -115,7 +106,7 @@ function Metric({ title, value, prefix = "", suffix = "" }) {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        style={{ fontSize: 28, fontWeight: 700 }}
+        style={{ fontSize: 28, fontWeight: 700, color: "var(--primary)" }}
       >
         {prefix}{Math.round(value)}{suffix}
       </motion.div>
@@ -125,15 +116,15 @@ function Metric({ title, value, prefix = "", suffix = "" }) {
 
 function RiskBadge({ level }) {
   const color =
-    level === "High" ? "#ef4444" :
-    level === "Medium" ? "#f59e0b" :
-    "#22c55e";
+    level === "HIGH" ? "var(--accent)" :
+    level === "MEDIUM" ? "var(--primary)" :
+    "var(--primary)";
 
   return (
-    <div className="card" style={{ borderColor: color }}>
+    <div className="card" style={{ border: `1px solid ${color}` }}>
       <div className="muted">Risk</div>
       <div style={{ fontSize: 28, fontWeight: 700, color }}>
-        {level || "Low"}
+        {level || "LOW"}
       </div>
     </div>
   );

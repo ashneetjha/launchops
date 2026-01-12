@@ -7,7 +7,14 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg)" }}>
+    <div
+      style={{
+        display: "flex",
+        minHeight: "100vh",
+        background: "var(--bg)",
+        color: "var(--text)"
+      }}
+    >
       <Sidebar />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
@@ -20,7 +27,8 @@ export default function Layout({ children }) {
             justifyContent: "space-between",
             padding: "0 24px",
             borderBottom: "1px solid var(--border)",
-            background: "var(--card)"
+            background: "var(--card)",
+            backdropFilter: "blur(12px)"
           }}
         >
           <button
@@ -32,7 +40,8 @@ export default function Layout({ children }) {
               background: "transparent",
               color: "var(--text)",
               border: "none",
-              cursor: "pointer"
+              cursor: "pointer",
+              fontWeight: 500
             }}
           >
             <ArrowLeft size={18} />
@@ -49,7 +58,8 @@ export default function Layout({ children }) {
             padding: "32px 40px",
             overflowY: "auto",
             display: "flex",
-            justifyContent: "center"
+            justifyContent: "center",
+            background: "transparent"
           }}
         >
           <div
