@@ -1,0 +1,100 @@
+:root {
+  --bg: #0b0f17;
+  --card: #131a2a;
+  --text: #eaf0ff;
+  --muted: #9aa4bf;
+  --gold: #e0b84a;
+  --border: rgba(255,255,255,0.08);
+}
+
+[data-theme="light"] {
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --text: #0b0f17;
+  --muted: #4b5563;
+  --gold: #c8a23a;
+  --border: rgba(0,0,0,0.08);
+}
+
+* {
+  box-sizing: border-box;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+input, button {
+  font: inherit;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  padding: 20px;
+}
+
+.btn {
+  background: var(--gold);
+  color: #000;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 220px;
+  height: 100vh;
+  background: #0b0e14;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.logo {
+  width: 100px;
+  margin: auto;
+}
+
+.sidebar nav a {
+  display: flex;
+  gap: 10px;
+  color: #f5c542;
+  text-decoration: none;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.sidebar nav a:hover {
+  background: #1a1f2e;
+}
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #0b1020, #020409);
+  color: white;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+.card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 24px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 0 40px rgba(0,0,0,0.4);
+}

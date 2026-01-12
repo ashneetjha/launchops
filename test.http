@@ -1,0 +1,99 @@
+### Common token
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5NjJmZTFlYmQzYmY0NWY0YmQ0NjIwNCIsImlhdCI6MTc2ODE1MjYzNSwiZXhwIjoxNzY4NzU3NDM1fQ.MIWRt8VmLRAm9m-XjGkKBL0BdobVgjYwp0QiIz5rwAs
+
+
+### ----------------------------
+### 1️⃣ Verify JWT
+### ----------------------------
+GET http://localhost:5000/api/protected
+Authorization: Bearer {{token}}
+
+###
+
+
+### ----------------------------
+### 2️⃣ Create a REAL work item
+### ----------------------------
+POST http://localhost:5000/api/work
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Prepare investor pitch deck",
+  "description": "Slides for VC demo including traction, revenue, and burn",
+  "priority": "high",
+  "dueDate": "2026-01-20"
+}
+
+###
+
+
+### ----------------------------
+### 3️⃣ Get my work items
+### ----------------------------
+GET http://localhost:5000/api/work
+Authorization: Bearer {{token}}
+
+###
+
+
+### ----------------------------
+### 4️⃣ Upload a startup document
+### ----------------------------
+POST http://localhost:5000/api/documents
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=MyBoundary
+
+--MyBoundary
+Content-Disposition: form-data; name="workItemId"
+
+6963722d52f59f3e0dfbbc08
+--MyBoundary
+Content-Disposition: form-data; name="file"; filename="startup.txt"
+Content-Type: text/plain
+
+This is a sample startup document.
+
+Revenue: 2.5L INR  
+Expenses: 1.2L INR  
+Funding Required: 5L INR  
+
+Major Risks:
+- High marketing spend
+- Customer churn
+- Cash flow issues
+
+--MyBoundary--
+
+###
+
+
+### ----------------------------
+### 5️⃣ Ask AI to summarize
+### ----------------------------
+POST http://localhost:5000/api/ai/analyze
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "workItemId": "6963722d52f59f3e0dfbbc08",
+  "question": "Summarize revenue, expenses, funding requirements, and business risks"
+}
+
+###
+
+
+### ----------------------------
+### 6️⃣ Extract financial metrics (AI → MongoDB)
+### ----------------------------
+POST http://localhost:5000/api/ai/extract-metrics
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "workItemId": "6963722d52f59f3e0dfbbc08"
+}
+###
+### Founder dashboard
+GET http://localhost:5000/api/dashboard
+Authorization: Bearer {{token}}
